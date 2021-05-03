@@ -2,14 +2,21 @@ package com.example.androidchess33;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 
 public class PlayChessGame extends AppCompatActivity {
@@ -832,7 +839,37 @@ public class PlayChessGame extends AppCompatActivity {
                 Toast.makeText(PlayChessGame.this,"CheckMate, Black Wins", Toast.LENGTH_LONG).show();
             }
             //Add functionality
+            offerSaveGameDialog(PlayChessGame.this);
         }
+    }
+
+    private void offerSaveGameDialog(Context c) {
+        final EditText taskEditText = new EditText(c);
+        AlertDialog dialog = new AlertDialog.Builder(c)
+                .setTitle("Save this Game")
+                .setMessage("Would you like to save this game? If so, enter a name:")
+                .setView(taskEditText)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String gameName = String.valueOf(taskEditText.getText());
+                        Date gameDate = Calendar.getInstance().getTime();
+                        // implement this code later if you want to make sure game names are unique
+//                        if(gameName.equals("taken")){
+//                            Toast.makeText(PlayChessGame.this,
+//                                    "Your game could not be saved because you chose an already existing name." +
+//                                            " Please try saving again.",
+//                                    Toast.LENGTH_LONG).show();
+//                            return;
+//                        }
+                        SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName));
+                        Log.d("savedGames: ", SavedGames.userSavedGames.toString());
+                    }
+                })
+                .setNegativeButton("No", null)
+                .create();
+        dialog.show();
+        Log.d("savedGames: ", SavedGames.userSavedGames.toString());
     }
 
 }

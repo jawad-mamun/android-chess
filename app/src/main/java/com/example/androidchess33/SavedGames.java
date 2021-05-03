@@ -12,7 +12,7 @@ import java.util.HashMap;
 
 public class SavedGames extends AppCompatActivity{
 
-
+    public static ArrayList<SavedGame> userSavedGames = new ArrayList<SavedGame>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
