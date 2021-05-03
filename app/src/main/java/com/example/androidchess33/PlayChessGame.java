@@ -13,8 +13,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PlayChessGame extends AppCompatActivity {
+    // maps the ID of a square on the chessboard to its position in the matrix
     public HashMap<Integer, int[]> findSquares = new HashMap<Integer, int[]>();
+    // holds details of User's first click: first element is row num, second element is col num,
+    // this element is ID of the square that was clicked
     private ArrayList<Integer> firstClick = new ArrayList<Integer>();
+    // stores all the moves in this game
+    private ArrayList<Move> gameMoves = new ArrayList<Move>();
     private boolean gameOn = true;
     private boolean whiteTurn = true;
     private boolean printBoard = true;
@@ -625,7 +630,9 @@ public class PlayChessGame extends AppCompatActivity {
             int endCol = col;
             int endRow = row;
 
-            if(board.move(startRow, startCol, endRow, endCol, whiteTurn)) {
+            ArrayList<Piece> capturedPiece = new ArrayList<Piece>();
+
+            if(board.move(startRow, startCol, endRow, endCol, whiteTurn, capturedPiece)) {
                 if(whiteTurn)
                     whiteTurn=false;
                 else
@@ -635,28 +642,88 @@ public class PlayChessGame extends AppCompatActivity {
                 }
                 else {
                     enPassantPossible = false;
-                    // System.out.println(enPassantPossible);
                 }
+
+                Piece pieceCaptured = null;
+                if(capturedPiece.size()>0) pieceCaptured = capturedPiece.get(0);
+
+                //add this move to the list of moves (this currently assumes no pawn promotion)
+                gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
+                        !whiteTurn, enPassantPossible, false, false,
+                        pieceCaptured, false));
 
                 updateUserView(endRow, endCol, id);
                 //need to handle promotion
             }
             else if(enPassantPossible && board.enPassantValid(startRow, startCol, endRow, endCol, whiteTurn)) {
-                // System.out.print(whiteTurn+"HEY");
+                Log.d("position: ", String.valueOf(endRow) + String.valueOf(endCol));
                 if(whiteTurn)
                     whiteTurn=false;
                 else {
                     whiteTurn = true;
                 }
-                printBoard = true;
                 enPassantPossible=false;
+
                 updateUserView(endRow, endCol, id);
+
+//                 handle the visuals of the pawn piece that was captured
+//                 handle en passants along row 6 (on the chessboard)
+                if(endRow==2 && endCol==0){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.A5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==1){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.B5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==2){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.C5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==3){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.D5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==4){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.E5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==5){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.F5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==6){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.G5);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==2 && endCol==7){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.H5);
+                    capturedPawn.setImageResource(0);
+                }
+                // handle en passants along row 3 (on the chessboard)
+                if(endRow==5 && endCol==0){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.A4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==1){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.B4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==2){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.C4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==3){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.D4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==4){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.E4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==5){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.F4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==6){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.G4);
+                    capturedPawn.setImageResource(0);
+                } else if(endRow==5 && endCol==7){
+                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.H4);
+                    capturedPawn.setImageResource(0);
+                }
 
             }
             else {
 
                 Toast.makeText(PlayChessGame.this, "Illegal Move", Toast.LENGTH_LONG).show();
-                printBoard = false;
             }
             firstClick.clear();
         }
@@ -759,7 +826,6 @@ public class PlayChessGame extends AppCompatActivity {
 
         if (board.isInCheckMate) {
             if (!whiteTurn) {
-                //System.out.println("White wins");
                 Toast.makeText(PlayChessGame.this,"CheckMate, White Wins", Toast.LENGTH_LONG).show();
             } else {
                 //System.out.println("Black wins");

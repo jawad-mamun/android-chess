@@ -1,5 +1,7 @@
 package com.example.androidchess33;
 
+import java.util.ArrayList;
+
 public class Board {
 
     /**
@@ -185,7 +187,7 @@ public class Board {
      * @param whiteTurn The color of the piece that will be moved, whiteTurn==true indicates a white piece, whiteTurn==false indicates a black piece.
      * @return boolean Returns true if the move is valid and the piece is successfully moved, otherwise false.
      */
-    public boolean move(int startX, int startY, int endX, int endY, boolean whiteTurn) {
+    public boolean move(int startX, int startY, int endX, int endY, boolean whiteTurn, ArrayList<Piece> capturedPiece) {
         if(board[startX][startY]==null) return false;
         Piece piece = board[startX][startY];
         if(whiteTurn) {
@@ -231,6 +233,7 @@ public class Board {
                         piece.firstMove = pieceFirstMoveValue;
                         return false;
                     }
+                    capturedPiece.add(board[endX][endY]);
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = null;
                     isInCheck = checkCheck(whiteTurn);
@@ -306,10 +309,10 @@ public class Board {
                     if(!(board[startRow][startCol+1] instanceof Pawn))
                         return false;
                     else {
+                        if(puttingKingInDanger(startRow, startCol, endRow, endCol)) return false;
                         board[endRow][endCol] = board[startRow][startCol];
                         board[startRow][startCol] = null;
                         board[startRow][startCol+1] = null;
-                        if(puttingKingInDanger(startRow, startCol, endRow, endCol)) return false;
                         isInCheck = checkCheck(whiteTurn);
                         isInCheckMate = checkCheckMate(whiteTurn);
                         return true;
@@ -319,10 +322,10 @@ public class Board {
                     if(!(board[startRow][startCol-1] instanceof Pawn))
                         return false;
                     else {
+                        if(puttingKingInDanger(startRow, startCol, endRow, endCol)) return false;
                         board[endRow][endCol] = board[startRow][startCol];
                         board[startRow][startCol] = null;
                         board[startRow][startCol-1] = null;
-                        if(puttingKingInDanger(startRow, startCol, endRow, endCol)) return false;
                         isInCheck = checkCheck(whiteTurn);
                         isInCheckMate = checkCheckMate(whiteTurn);
                         return true;
