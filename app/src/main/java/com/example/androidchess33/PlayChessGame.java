@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -670,6 +671,48 @@ public class PlayChessGame extends AppCompatActivity {
 
         ImageButton firstPiece = (ImageButton)findViewById(firstClick.get(2));
         firstPiece.setImageResource(0);
+
+        Log.d("Difference:", String.valueOf(Math.abs(firstClick.get(1)-endCol)));
+
+        // handle castling first
+        if(board.board[endRow][endCol] instanceof King && Math.abs(firstClick.get(1)-endCol)==2){
+            Log.d("Position:", endRow + ", " + endCol);
+            ImageButton secondPiece = (ImageButton)findViewById(id);
+            // castling black E8 --> C8
+            if(endCol==2 && endRow==0){
+                secondPiece.setImageResource(R.drawable.blackking);
+                ImageButton movingRook = (ImageButton)findViewById(R.id.A8);
+                movingRook.setImageResource(0);
+                ImageButton movingRookDestination = (ImageButton)findViewById(R.id.D8);
+                movingRookDestination.setImageResource(R.drawable.blackrook);
+            }
+            // castling black E8 --> G8
+            if(endCol==6 && endRow==0){
+                secondPiece.setImageResource(R.drawable.blackking);
+                ImageButton movingRook = (ImageButton)findViewById(R.id.H8);
+                movingRook.setImageResource(0);
+                ImageButton movingRookDestination = (ImageButton)findViewById(R.id.F8);
+                movingRookDestination.setImageResource(R.drawable.blackrook);
+            }
+            // castling white E1 --> G1
+            if(endCol==6 && endRow==7){
+                secondPiece.setImageResource(R.drawable.whiteking);
+                ImageButton movingRook = (ImageButton)findViewById(R.id.H1);
+                movingRook.setImageResource(0);
+                ImageButton movingRookDestination = (ImageButton)findViewById(R.id.F1);
+                movingRookDestination.setImageResource(R.drawable.whiterook);
+            }
+            // castling white E1 --> C1
+            if(endCol==2 && endRow==7){
+                secondPiece.setImageResource(R.drawable.whiteking);
+                ImageButton movingRook = (ImageButton)findViewById(R.id.A1);
+                movingRook.setImageResource(0);
+                ImageButton movingRookDestination = (ImageButton)findViewById(R.id.D1);
+                movingRookDestination.setImageResource(R.drawable.whiterook);
+            }
+            return;
+        }
+
         if(board.board[endRow][endCol] instanceof Pawn){
             ImageButton secondPiece = (ImageButton)findViewById(id);
             if(whiteTurn)
