@@ -96,7 +96,7 @@ public class SavedGames extends AppCompatActivity implements Serializable {
 
     }
     private ArrayList<SavedGame> readFile(ArrayList<SavedGame> userSavedGames, Context context) throws IOException, ClassNotFoundException {
-        File file = new File(SavedGames.this.getFilesDir()+"/text/sample");
+        File file = new File(SavedGames.this.getFilesDir()+"/text/storedData");
         FileInputStream fi = new FileInputStream(file);
         ObjectInputStream oi = new ObjectInputStream(fi);
 
