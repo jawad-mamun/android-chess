@@ -1083,7 +1083,6 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
         try {
             ArrayList<SavedGame> savedGameArrayList = readFile(getApplicationContext());
 
-            Log.d("Array Size", "" + savedGameArrayList.size());
             final EditText taskEditText = new EditText(c);
             AlertDialog dialog = new AlertDialog.Builder(c)
                     .setTitle("Save this Game")
@@ -1188,9 +1187,8 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
         d.show();
         d.getWindow().setAttributes(lp);
         //Log.d("savedGames: ", SavedGames.userSavedGames.toString());
-
-
     }
+
     private void writeToFile(ArrayList<SavedGame> userSavedGames, Context context){
 
             File file = new File(PlayChessGame.this.getFilesDir(),"text");
@@ -1199,7 +1197,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                 Log.d("Message", "File does not exist");
             }
             try {
-            File gpxfile = new File(file,"sample");
+            File gpxfile = new File(file,"storedData");
             FileOutputStream fos = new FileOutputStream(gpxfile);
             ObjectOutputStream o = new ObjectOutputStream(fos);
             o.writeObject(userSavedGames);
@@ -1232,12 +1230,18 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
 
     }
     private ArrayList<SavedGame> readFile(Context context) throws IOException, ClassNotFoundException {
-        File file = new File(PlayChessGame.this.getFilesDir()+"/text/sample");
-        FileInputStream fi = new FileInputStream(file);
-        ObjectInputStream oi = new ObjectInputStream(fi);
+        try{
+            File file = new File(PlayChessGame.this.getFilesDir()+"/text/storedData");
+            FileInputStream fi = new FileInputStream(file);
+            ObjectInputStream oi = new ObjectInputStream(fi);
 
-        ArrayList<SavedGame> listGames = (ArrayList<SavedGame>) oi.readObject();
-        return listGames;
+            ArrayList<SavedGame> listGames = (ArrayList<SavedGame>) oi.readObject();
+            return listGames;
+        }
+        catch(Exception e){
+            return new ArrayList<SavedGame>();
+        }
+
        /* for(int i=0; i<listGames.size(); i++) {
             Log.d("Read in Games", listGames.get(i).toString());
         }
@@ -1246,7 +1250,6 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
 
 
         //Toast.makeText(PlayChessGame.this, "Read your text", Toast.LENGTH_LONG).show();
-
 
     }
 

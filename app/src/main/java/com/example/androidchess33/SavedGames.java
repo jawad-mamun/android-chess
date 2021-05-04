@@ -126,7 +126,7 @@ public class SavedGames extends AppCompatActivity implements Serializable {
             // Look through the unsorted strings (those at j or higher) for the one that is first in lexicographic order
             int min = j;
             for ( int k=j+1; k < nameList.size(); k++ )
-                if ( nameList.get(k).compareTo( nameList.get(min)) < 0 ) min = k;
+                if ( nameList.get(k).toLowerCase().compareTo( nameList.get(min).toLowerCase()) < 0 ) min = k;
 
             // Swap the reference at j with the reference at min
             Collections.swap(nameList, j, min);
