@@ -731,10 +731,10 @@
         android:text="Undo" />
 
     <Button
-        android:id="@+id/storedGamesButton"
+        android:id="@+id/AIMoveButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/drawButton"
-        android:text="Go to Stored Games (will lose current progress)" />
+        android:text="AI Button (Choose Move for Current Player)" />
 
 </RelativeLayout>

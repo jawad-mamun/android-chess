@@ -34,10 +34,14 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class PlayChessGame extends AppCompatActivity implements Serializable {
     // maps the ID of a square on the chessboard to its position in the matrix
     public HashMap<Integer, int[]> findSquares = new HashMap<Integer, int[]>();
+    // maps the position of a matrix to the square on the chessboard
+    public HashMap<ArrayList<Integer>, Integer> findIDFromMatrix = new HashMap<ArrayList<Integer>, Integer>();
     // holds details of User's first click: first element is row num, second element is col num,
     // this element is ID of the square that was clicked
     private ArrayList<Integer> firstClick = new ArrayList<Integer>();
@@ -150,6 +154,25 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
         findSquares.put(R.id.F1, new int[]{7,5});
         findSquares.put(R.id.G1, new int[]{7,6});
         findSquares.put(R.id.H1, new int[]{7,7});
+
+        // map the opposite direction of findSquares
+        Iterator findSquaresIterator = findSquares.entrySet().iterator();
+        while(findSquaresIterator.hasNext()){
+            Map.Entry mapElement = (Map.Entry)findSquaresIterator.next();
+            int[] matrixPosInitial = (int[]) mapElement.getValue();
+            int squareID = (int) mapElement.getKey();
+            ArrayList<Integer> matrixPos = new ArrayList<Integer>();
+            matrixPos.add(matrixPosInitial[0]); matrixPos.add(matrixPosInitial[1]);
+            findIDFromMatrix.put(matrixPos, squareID);
+        }
+
+        Button AIMoveButton = (Button) findViewById(R.id.AIMoveButton);
+        AIMoveButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                AIMove();
+            }
+        });
 
         Button undoButton = (Button) findViewById(R.id.undoButton);
         undoButton.setOnClickListener(new View.OnClickListener(){
@@ -738,7 +761,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                 // records whether a piece's first move was changed
                 boolean firstMoveChanged = firstMove != board.board[endRow][endCol].firstMove;
 
-                //add this move to the list of moves (this currently assumes no pawn promotion)
+                //add this move to the list of moves
                 gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
                         !whiteTurn, enPassantPossible, false, castlingMove,
                         pieceCaptured, false, firstMoveChanged));
@@ -760,8 +783,8 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                         !whiteTurn, enPassantPossible, true, false,
                         null, false, false));
 
-//                 handle the visuals of the pawn piece that was captured
-//                 handle en passants along row 6 (on the chessboard)
+                //handle the visuals of the pawn piece that was captured
+                //handle en passants along row 6 (on the chessboard)
                 if(endRow==2 && endCol==0){
                     ImageButton capturedPawn = (ImageButton) findViewById(R.id.A5);
                     capturedPawn.setImageResource(0);
@@ -828,6 +851,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
 
         }
     }
+
     public void updateUserView(int endRow, int endCol, int id){
 
         ImageButton firstPiece = (ImageButton)findViewById(firstClick.get(2));
@@ -943,8 +967,6 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
             endPosition.setImageResource(pieceToDrawable.get(board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()].toString()));
         }
     }
-
-
 
     private void undoCastlingMove(Move lastMove){
         ImageButton kingsPreviousPosition = null;
@@ -1079,6 +1101,169 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
         }
     }
 
+    private void AIMove(){
+        for(int i = 0; i<board.board.length; i++){
+            for(int j = 0; j<board.board[i].length; j++){
+                if(board.board[i][j] != null && board.board[i][j].isWhite == whiteTurn){
+                    for(int a = 0; a<board.board.length; a++){
+                        for(int b = 0; b<board.board[a].length; b++){
+                            firstClick.clear();
+                            ArrayList<Piece> capturedPiece = new ArrayList<Piece>();
+                            ArrayList<Integer> startMatrixPos = new ArrayList<Integer>();
+                            startMatrixPos.add(i); startMatrixPos.add(j);
+                            ArrayList<Integer> endMatrixPos = new ArrayList<Integer>();
+                            endMatrixPos.add(a); endMatrixPos.add(b);
+                            int startID = findIDFromMatrix.get(startMatrixPos);
+                            int endID = findIDFromMatrix.get(endMatrixPos);
+                            firstClick.add(i); firstClick.add(j); firstClick.add(startID);
+
+                            // stores Pieces's current firstMove value
+                            boolean firstMove = false;
+                            if(board.board[i][j]!=null){
+                                firstMove = board.board[i][j].firstMove;
+                            }
+
+                            if(board.move(i, j, a, b, whiteTurn, capturedPiece)) {
+                                if(whiteTurn)
+                                    whiteTurn=false;
+                                else
+                                    whiteTurn = true;
+                                if((i == a+2 || i == a-2) && j==b && board.board[a][b] instanceof Pawn) {
+                                    enPassantPossible = true;
+                                }
+                                else {
+                                    enPassantPossible = false;
+                                }
+
+                                // CHANGE PROMOTION FOR AI
+                                if(board.board[a][b] instanceof Pawn && (a==0 || a==7)){
+
+                                    board.board[a][b] = new Queen(!whiteTurn);
+
+                                    board.isInCheck = board.checkCheck((!whiteTurn));
+                                    board.isInCheckMate = board.checkCheckMate(!whiteTurn);
+
+                                    Piece pieceCaptured = null;
+                                    if(capturedPiece.size()>0) pieceCaptured = capturedPiece.get(0);
+
+                                    boolean castlingMove = false;
+
+                                    // records whether a piece's first move was changed
+                                    boolean firstMoveChanged = firstMove != board.board[a][b].firstMove;
+
+                                    //add this move to the list of moves
+                                    gameMoves.add(new Move(i, j, startID, a, b, endID,
+                                            !whiteTurn, enPassantPossible, false, castlingMove,
+                                            pieceCaptured, true, firstMoveChanged));
+
+                                    updateUserView(a, b, endID);
+
+                                    firstClick.clear();
+                                    return;
+                                }
+
+
+                                Piece pieceCaptured = null;
+                                if(capturedPiece.size()>0) pieceCaptured = capturedPiece.get(0);
+
+                                boolean castlingMove = false;
+                                if(Math.abs(j-b)==2 && board.board[a][b] instanceof King){
+                                    castlingMove = true;
+                                }
+
+                                // records whether a piece's first move was changed
+                                boolean firstMoveChanged = firstMove != board.board[a][b].firstMove;
+
+                                //add this move to the list of moves (this currently assumes no pawn promotion)
+                                gameMoves.add(new Move(i, j, startID, a, b, endID,
+                                        !whiteTurn, enPassantPossible, false, castlingMove,
+                                        pieceCaptured, false, firstMoveChanged));
+
+                                updateUserView(a, b, endID);
+                                firstClick.clear();
+                                return;
+                            } else if(enPassantPossible && board.enPassantValid(i, j, a, b, whiteTurn)) {
+                                if(whiteTurn)
+                                    whiteTurn=false;
+                                else {
+                                    whiteTurn = true;
+                                }
+                                enPassantPossible=false;
+
+                                updateUserView(a, b, endID);
+
+                                // add this move to the list of moves
+                                gameMoves.add(new Move(i, j, startID, a, b, endID,
+                                        !whiteTurn, enPassantPossible, true, false,
+                                        null, false, false));
+
+                                //handle the visuals of the pawn piece that was captured
+                                //handle en passants along row 6 (on the chessboard)
+                                if(a==2 && b==0){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.A5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==1){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.B5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==2){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.C5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==3){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.D5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==4){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.E5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==5){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.F5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==6){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.G5);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==2 && b==7){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.H5);
+                                    capturedPawn.setImageResource(0);
+                                }
+                                // handle en passants along row 3 (on the chessboard)
+                                if(a==5 && b==0){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.A4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==1){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.B4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==2){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.C4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==3){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.D4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==4){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.E4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==5){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.F4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==6){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.G4);
+                                    capturedPawn.setImageResource(0);
+                                } else if(a==5 && b==7){
+                                    ImageButton capturedPawn = (ImageButton) findViewById(R.id.H4);
+                                    capturedPawn.setImageResource(0);
+                                }
+                                firstClick.clear();
+                                return;
+                            }
+
+                            firstClick.clear();
+                        }
+                    }
+                }
+            }
+        }
+        Toast.makeText(PlayChessGame.this, "There are no valid moves for this " +
+                "player to make", Toast.LENGTH_LONG).show();
+    }
+
     private void offerSaveGameDialog(Context c) {
         try {
             ArrayList<SavedGame> savedGameArrayList = readFile(getApplicationContext());
@@ -1134,7 +1319,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
         }
     }
 
-        private void promotionDialog(Context c, int startRow, int startCol, int endRow, int endCol, boolean whiteTurn,
+    private void promotionDialog(Context c, int startRow, int startCol, int endRow, int endCol, boolean whiteTurn,
                                  ArrayList<Piece> capturedPiece, int id, boolean firstMove){
         AlertDialog.Builder buildPromotionList = new AlertDialog.Builder(c);
         buildPromotionList.setTitle("Promote pawn to one of the following pieces:");
@@ -1171,7 +1356,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
 
                 //add this move to the list of moves (this currently assumes no pawn promotion)
                 gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
-                        !whiteTurn, enPassantPossible, false, castlingMove,
+                        whiteTurn, enPassantPossible, false, castlingMove,
                         pieceCaptured, true, firstMoveChanged));
 
                 updateUserView(endRow, endCol, id);
@@ -1229,6 +1414,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
             fos.close();*/
 
     }
+
     private ArrayList<SavedGame> readFile(Context context) throws IOException, ClassNotFoundException {
         try{
             File file = new File(PlayChessGame.this.getFilesDir()+"/text/storedData");
