@@ -3,6 +3,7 @@ package com.example.androidchess33;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.PorterDuff;
@@ -10,6 +11,9 @@ import android.os.Bundle;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -27,6 +31,8 @@ public class PlayChessGame extends AppCompatActivity {
     private ArrayList<Integer> firstClick = new ArrayList<Integer>();
     // stores all the moves in this game
     private ArrayList<Move> gameMoves = new ArrayList<Move>();
+    // maps the toString representation of a Piece to its drawable
+    private HashMap<String, Integer> pieceToDrawable = new HashMap<String, Integer>();
     private boolean gameOn = true;
     private boolean whiteTurn = true;
     private boolean printBoard = true;
@@ -37,6 +43,21 @@ public class PlayChessGame extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.play_chess_game_layout);
+
+        // fills in the pieceToDrawable HashMap to allow for lookup
+        pieceToDrawable.put("wp", R.drawable.whitepawn);
+        pieceToDrawable.put("wR", R.drawable.whiterook);
+        pieceToDrawable.put("wN", R.drawable.whiteknight);
+        pieceToDrawable.put("wB", R.drawable.whitebishop);
+        pieceToDrawable.put("wQ", R.drawable.whitequeen);
+        pieceToDrawable.put("wK", R.drawable.whiteking);
+        pieceToDrawable.put("bp", R.drawable.blackpawn);
+        pieceToDrawable.put("bR", R.drawable.blackrook);
+        pieceToDrawable.put("bN", R.drawable.blackknight);
+        pieceToDrawable.put("bB", R.drawable.blackbishop);
+        pieceToDrawable.put("bQ", R.drawable.blackqueen);
+        pieceToDrawable.put("bK", R.drawable.blackking);
+
 
         // first row inputted to HashMap
         findSquares.put(R.id.A8, new int[]{0,0});
@@ -117,6 +138,14 @@ public class PlayChessGame extends AppCompatActivity {
         findSquares.put(R.id.F1, new int[]{7,5});
         findSquares.put(R.id.G1, new int[]{7,6});
         findSquares.put(R.id.H1, new int[]{7,7});
+
+        Button undoButton = (Button) findViewById(R.id.undoButton);
+        undoButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                undoMove();
+            }
+        });
 
         //Column A ImageButtons
         ImageButton a1 = (ImageButton) findViewById(R.id.A1);
@@ -639,31 +668,50 @@ public class PlayChessGame extends AppCompatActivity {
 
             ArrayList<Piece> capturedPiece = new ArrayList<Piece>();
 
+            // stores Pieces's current firstMove value
+            boolean firstMove = false;
+            if(board.board[startRow][startCol]!=null){
+                firstMove = board.board[startRow][startCol].firstMove;
+            }
+
             if(board.move(startRow, startCol, endRow, endCol, whiteTurn, capturedPiece)) {
                 if(whiteTurn)
                     whiteTurn=false;
                 else
                     whiteTurn = true;
-                if((startRow == endRow+2 || startRow == endRow-2) && startCol==endCol) {
+                if((startRow == endRow+2 || startRow == endRow-2) && startCol==endCol && board.board[endRow][endCol] instanceof Pawn) {
                     enPassantPossible = true;
                 }
                 else {
                     enPassantPossible = false;
                 }
 
+                // opens dialog for user to handle promotion when applicable (and handles the rest of promotion there)
+                if(board.board[endRow][endCol] instanceof Pawn && (endRow==0 || endRow==7)){
+                    promotionDialog(PlayChessGame.this, startRow, startCol, endRow, endCol, !whiteTurn, capturedPiece, id, firstMove);
+                    return;
+                }
+
+
                 Piece pieceCaptured = null;
                 if(capturedPiece.size()>0) pieceCaptured = capturedPiece.get(0);
 
+                boolean castlingMove = false;
+                if(Math.abs(startCol-endCol)==2 && board.board[endRow][endCol] instanceof King){
+                    castlingMove = true;
+                }
+
+                // records whether a piece's first move was changed
+                boolean firstMoveChanged = firstMove != board.board[endRow][endCol].firstMove;
+
                 //add this move to the list of moves (this currently assumes no pawn promotion)
                 gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
-                        !whiteTurn, enPassantPossible, false, false,
-                        pieceCaptured, false));
+                        !whiteTurn, enPassantPossible, false, castlingMove,
+                        pieceCaptured, false, firstMoveChanged));
 
                 updateUserView(endRow, endCol, id);
-                //need to handle promotion
             }
             else if(enPassantPossible && board.enPassantValid(startRow, startCol, endRow, endCol, whiteTurn)) {
-                Log.d("position: ", String.valueOf(endRow) + String.valueOf(endCol));
                 if(whiteTurn)
                     whiteTurn=false;
                 else {
@@ -672,6 +720,11 @@ public class PlayChessGame extends AppCompatActivity {
                 enPassantPossible=false;
 
                 updateUserView(endRow, endCol, id);
+
+                // add this move to the list of moves
+                gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
+                        !whiteTurn, enPassantPossible, true, false,
+                        null, false, false));
 
 //                 handle the visuals of the pawn piece that was captured
 //                 handle en passants along row 6 (on the chessboard)
@@ -746,11 +799,9 @@ public class PlayChessGame extends AppCompatActivity {
         ImageButton firstPiece = (ImageButton)findViewById(firstClick.get(2));
         firstPiece.setImageResource(0);
 
-        Log.d("Difference:", String.valueOf(Math.abs(firstClick.get(1)-endCol)));
 
         // handle castling first
         if(board.board[endRow][endCol] instanceof King && Math.abs(firstClick.get(1)-endCol)==2){
-            Log.d("Position:", endRow + ", " + endCol);
             ImageButton secondPiece = (ImageButton)findViewById(id);
             // castling black E8 --> C8
             if(endCol==2 && endRow==0){
@@ -787,49 +838,9 @@ public class PlayChessGame extends AppCompatActivity {
             return;
         }
 
-        if(board.board[endRow][endCol] instanceof Pawn){
-            ImageButton secondPiece = (ImageButton)findViewById(id);
-            if(whiteTurn)
-                secondPiece.setImageResource(R.drawable.blackpawn);
-            else
-                secondPiece.setImageResource(R.drawable.whitepawn);
-
-        }
-        if(board.board[endRow][endCol] instanceof Knight){
-            ImageButton secondPiece = (ImageButton)findViewById(id);
-            if(whiteTurn)
-                secondPiece.setImageResource(R.drawable.blackknight);
-            else
-                secondPiece.setImageResource(R.drawable.whiteknight);
-        }
-        if(board.board[endRow][endCol] instanceof Bishop){
-            ImageButton secondPiece = (ImageButton)findViewById(id);
-            if(whiteTurn)
-                secondPiece.setImageResource(R.drawable.blackbishop);
-            else
-                secondPiece.setImageResource(R.drawable.whitebishop);
-        }
-        if(board.board[endRow][endCol] instanceof Rook){
-            ImageButton secondPiece = (ImageButton)findViewById(id);
-            if(whiteTurn)
-                secondPiece.setImageResource(R.drawable.blackrook);
-            else
-                secondPiece.setImageResource(R.drawable.whiterook);
-        }
-        if(board.board[endRow][endCol] instanceof Queen){
-            ImageButton secondPiece = (ImageButton)findViewById(id);
-            if(whiteTurn)
-                secondPiece.setImageResource(R.drawable.blackqueen);
-            else
-                secondPiece.setImageResource(R.drawable.whitequeen);
-        }
-        if(board.board[endRow][endCol] instanceof King){
-            ImageButton secondPiece = (ImageButton)findViewById(id);
-            if(whiteTurn)
-                secondPiece.setImageResource(R.drawable.blackking);
-            else
-                secondPiece.setImageResource(R.drawable.whiteking);
-        }
+        // updates virtual board's appearance using pieceToKey hashmap
+        ImageButton secondPiece = (ImageButton)findViewById(id);
+        secondPiece.setImageResource(pieceToDrawable.get(board.board[endRow][endCol].toString()));
 
         if (board.isInCheckMate) {
             if (!whiteTurn) {
@@ -840,6 +851,198 @@ public class PlayChessGame extends AppCompatActivity {
             }
             //Add functionality
             offerSaveGameDialog(PlayChessGame.this);
+        }
+    }
+
+    private void undoMove(){
+        if(gameMoves.size()==0){
+            Toast.makeText(PlayChessGame.this,"There are no moves to undo", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Move lastMove = gameMoves.get(gameMoves.size()-1);
+        gameMoves.remove(gameMoves.size()-1);
+
+        //handles undoing an enPassantMove
+        if(lastMove.isEnPassantMove()){
+            undoEnPassantMove(lastMove);
+            return;
+        }
+
+        //handles undoing a castling move
+        if(lastMove.isCastlingMove()){
+            undoCastlingMove(lastMove);
+            return;
+        }
+
+
+        Piece startPiece = board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()];
+        // changes start piece back to a pawn if the move was a promotion
+        if(lastMove.isPawnPromotion()){
+            startPiece = new Pawn(!whiteTurn);
+            startPiece.firstMove = false;
+        }
+        board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()] = startPiece;
+        board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()] = lastMove.getCapturedPiece();
+        enPassantPossible = false;
+        // sets enPassantPossible to the previous value, if that value exists
+        if(gameMoves.size()>0){
+            enPassantPossible = gameMoves.get(gameMoves.size()-1).isEnPassantPossible();
+        }
+        whiteTurn = lastMove.isWhiteTurn();
+
+        // if the move was a piece moving for the first time, resets that piece's firstMove boolean
+        if(lastMove.isFirstMoveChanged()){
+            board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()].firstMove = true;
+        }
+
+
+        // initially makes start Position blank, then fills in a piece there if one exists
+        ImageButton startPosition = (ImageButton)findViewById(lastMove.getFirstClickID());
+        startPosition.setImageResource(0);
+        if(board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()]!=null){
+            startPosition.setImageResource(pieceToDrawable.get(board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()].toString()));
+        }
+
+        // initially makes end Position blank, then fills in a piece there if one exists
+        ImageButton endPosition = (ImageButton)findViewById(lastMove.getSecondClickID());
+        endPosition.setImageResource(0);
+        if(board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()]!=null){
+            endPosition.setImageResource(pieceToDrawable.get(board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()].toString()));
+        }
+    }
+
+
+
+    private void undoCastlingMove(Move lastMove){
+        ImageButton kingsPreviousPosition = null;
+        ImageButton rooksPreviousPosition = null;
+        ImageButton restoreRookPosition = null;
+        ImageButton restoreKingPosition = null;
+        //castling top
+        if(lastMove.getSecondClickRow()==0){
+            //castling right
+            if(lastMove.getSecondClickColumn()==6){
+                board.board[0][6] = null;
+                kingsPreviousPosition = (ImageButton) findViewById(R.id.G8);
+                board.board[0][5] = null;
+                rooksPreviousPosition = (ImageButton) findViewById(R.id.F8);
+                board.board[0][7] = new Rook(false);
+                restoreRookPosition = (ImageButton) findViewById(R.id.H8);
+            }
+            //castling left
+            if(lastMove.getSecondClickColumn()==2){
+                board.board[0][2] = null;
+                kingsPreviousPosition = (ImageButton) findViewById(R.id.C8);
+                board.board[0][3] = null;
+                rooksPreviousPosition = (ImageButton) findViewById(R.id.D8);
+                board.board[0][0] = new Rook(false);
+                restoreRookPosition = (ImageButton) findViewById(R.id.A8);
+            }
+            board.board[0][4] = new King(false);
+            restoreKingPosition = (ImageButton) findViewById(R.id.E8);
+        }
+        //castling bottom
+        else if(lastMove.getSecondClickRow()==7){
+            //castling right
+            if(lastMove.getSecondClickColumn()==6){
+                board.board[7][6] = null;
+                kingsPreviousPosition = (ImageButton) findViewById(R.id.G1);
+                board.board[7][5] = null;
+                rooksPreviousPosition = (ImageButton) findViewById(R.id.F1);
+                board.board[7][7] = new Rook(true);
+                restoreRookPosition = (ImageButton) findViewById(R.id.H1);
+            }
+            //castling left
+            if(lastMove.getSecondClickColumn()==2){
+                board.board[7][2] = null;
+                kingsPreviousPosition = (ImageButton) findViewById(R.id.C1);
+                board.board[7][3] = null;
+                rooksPreviousPosition = (ImageButton) findViewById(R.id.D1);
+                board.board[7][0] = new Rook(true);
+                restoreRookPosition = (ImageButton) findViewById(R.id.A1);
+            }
+            board.board[7][4] = new King(true);
+            restoreKingPosition = (ImageButton) findViewById(R.id.E1);
+        }
+        kingsPreviousPosition.setImageResource(0);
+        rooksPreviousPosition.setImageResource(0);
+        restoreRookPosition.setImageResource(pieceToDrawable.get((new Rook(lastMove.whiteTurn).toString())));
+        restoreKingPosition.setImageResource(pieceToDrawable.get((new King(lastMove.whiteTurn).toString())));
+
+        enPassantPossible = false;
+        // sets enPassantPossible to the previous value, if that value exists
+        if(gameMoves.size()>0){
+            enPassantPossible = gameMoves.get(gameMoves.size()-1).isEnPassantPossible();
+        }
+        whiteTurn = lastMove.isWhiteTurn();
+    }
+
+    private void undoEnPassantMove(Move lastMove){
+        Piece movedPawn = board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()];
+        board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()] = movedPawn;
+        board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()] = null;
+        Pawn capturedPawn = new Pawn(!movedPawn.isWhite);
+        capturedPawn.firstMove = false;
+        board.board[lastMove.getFirstClickRow()][lastMove.getSecondClickColumn()] = capturedPawn;
+        enPassantPossible = false;
+        // sets enPassantPossible to the previous value, if that value exists
+        if(gameMoves.size()>0){
+            enPassantPossible = gameMoves.get(gameMoves.size()-1).isEnPassantPossible();
+        }
+        whiteTurn = lastMove.isWhiteTurn();
+
+        //resets visualization
+        ImageButton startPosition = (ImageButton)findViewById(lastMove.getFirstClickID());
+        startPosition.setImageResource(0);
+        if(board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()]!=null){
+            startPosition.setImageResource(pieceToDrawable.get(board.board[lastMove.getFirstClickRow()][lastMove.getFirstClickColumn()].toString()));
+        }
+        ImageButton endPosition = (ImageButton)findViewById(lastMove.getSecondClickID());
+        endPosition.setImageResource(0);
+        if(board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()]!=null){
+            endPosition.setImageResource(pieceToDrawable.get(board.board[lastMove.getSecondClickRow()][lastMove.getSecondClickColumn()].toString()));
+        }
+        // resets captured pawn visualization
+        if(lastMove.getFirstClickRow()==3){
+            ImageButton capturedPawnPosition = null;
+            if(lastMove.getSecondClickColumn()==0){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.A5);
+            } else if(lastMove.getSecondClickColumn()==1){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.B5);
+            } else if(lastMove.getSecondClickColumn()==2){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.C5);
+            } else if(lastMove.getSecondClickColumn()==3){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.D5);
+            } else if(lastMove.getSecondClickColumn()==4){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.E5);
+            } else if(lastMove.getSecondClickColumn()==5){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.F5);
+            } else if(lastMove.getSecondClickColumn()==6){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.G5);
+            } else if(lastMove.getSecondClickColumn()==7){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.H5);
+            }
+            capturedPawnPosition.setImageResource(R.drawable.blackpawn);
+        } else if(lastMove.getFirstClickRow()==4){
+            ImageButton capturedPawnPosition = null;
+            if(lastMove.getSecondClickColumn()==0){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.A4);
+            } else if(lastMove.getSecondClickColumn()==1){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.B4);
+            } else if(lastMove.getSecondClickColumn()==2){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.C4);
+            } else if(lastMove.getSecondClickColumn()==3){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.D4);
+            } else if(lastMove.getSecondClickColumn()==4){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.E4);
+            } else if(lastMove.getSecondClickColumn()==5){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.F4);
+            } else if(lastMove.getSecondClickColumn()==6){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.G4);
+            } else if(lastMove.getSecondClickColumn()==7){
+                capturedPawnPosition = (ImageButton) findViewById(R.id.H4);
+            }
+            capturedPawnPosition.setImageResource(R.drawable.whitepawn);
         }
     }
 
@@ -863,13 +1066,65 @@ public class PlayChessGame extends AppCompatActivity {
 //                            return;
 //                        }
                         SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName));
-                        Log.d("savedGames: ", SavedGames.userSavedGames.toString());
                     }
                 })
                 .setNegativeButton("No", null)
                 .create();
         dialog.show();
-        Log.d("savedGames: ", SavedGames.userSavedGames.toString());
+    }
+
+    private void promotionDialog(Context c, int startRow, int startCol, int endRow, int endCol, boolean whiteTurn,
+                                 ArrayList<Piece> capturedPiece, int id, boolean firstMove){
+        AlertDialog.Builder buildPromotionList = new AlertDialog.Builder(c);
+        buildPromotionList.setTitle("Promote pawn to one of the following pieces:");
+        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(c, android.R.layout.select_dialog_singlechoice);
+        arrayAdapter.add("Queen");
+        arrayAdapter.add("Rook");
+        arrayAdapter.add("Bishop");
+        arrayAdapter.add("Knight");
+        buildPromotionList.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String strName = arrayAdapter.getItem(which);
+
+                if(strName.equals("Queen")){
+                    board.board[endRow][endCol] = new Queen(whiteTurn);
+                } else if(strName.equals("Rook")){
+                    board.board[endRow][endCol] = new Rook(whiteTurn);
+                } else if(strName.equals("Bishop")){
+                    board.board[endRow][endCol] = new Bishop(whiteTurn);
+                } else if(strName.equals("Knight")){
+                    board.board[endRow][endCol] = new Knight(whiteTurn);
+                }
+
+                board.isInCheck = board.checkCheck((whiteTurn));
+                board.isInCheckMate = board.checkCheckMate(whiteTurn);
+
+                Piece pieceCaptured = null;
+                if(capturedPiece.size()>0) pieceCaptured = capturedPiece.get(0);
+
+                boolean castlingMove = false;
+
+                // records whether a piece's first move was changed
+                boolean firstMoveChanged = firstMove != board.board[endRow][endCol].firstMove;
+
+                //add this move to the list of moves (this currently assumes no pawn promotion)
+                gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
+                        !whiteTurn, enPassantPossible, false, castlingMove,
+                        pieceCaptured, true, firstMoveChanged));
+
+                updateUserView(endRow, endCol, id);
+
+                firstClick.clear();
+            }
+        });
+        Dialog d = buildPromotionList.setView(new View(c)).create();
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(d.getWindow().getAttributes());
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+        d.show();
+        d.getWindow().setAttributes(lp);
     }
 
 }

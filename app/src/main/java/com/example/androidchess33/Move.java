@@ -13,11 +13,14 @@ public class Move {
     boolean enPassantMove;
     boolean castlingMove;
     boolean pawnPromotion;
+    boolean firstMoveChanged;
+
     Piece capturedPiece;
 
     public Move(int firstClickRow, int firstClickColumn, int firstClickID, int secondClickRow,
                 int secondClickColumn, int secondClickID, boolean whiteTurn, boolean enPassantPossible,
-                boolean enPassantMove, boolean castlingMove, Piece capturedPiece, boolean pawnPromotion) {
+                boolean enPassantMove, boolean castlingMove, Piece capturedPiece, boolean pawnPromotion,
+                boolean firstMoveChanged) {
         this.firstClickRow = firstClickRow;
         this.firstClickColumn = firstClickColumn;
         this.firstClickID = firstClickID;
@@ -30,6 +33,11 @@ public class Move {
         this.castlingMove = castlingMove;
         this.capturedPiece = capturedPiece;
         this.pawnPromotion = pawnPromotion;
+        this.firstMoveChanged = firstMoveChanged;
+    }
+
+    public boolean isFirstMoveChanged() {
+        return firstMoveChanged;
     }
 
     public boolean isPawnPromotion(){
