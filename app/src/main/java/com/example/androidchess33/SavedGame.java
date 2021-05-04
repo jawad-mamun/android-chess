@@ -8,11 +8,23 @@ public class SavedGame implements Serializable {
     ArrayList<Move> gameMoves;
     Date datePlayed;
     String gameName;
+    boolean draw;
+    boolean resign;
 
-    public SavedGame(ArrayList<Move> gameMoves, Date datePlayed, String gameName) {
+    public SavedGame(ArrayList<Move> gameMoves, Date datePlayed, String gameName, boolean draw, boolean resign) {
         this.gameMoves = gameMoves;
         this.datePlayed = datePlayed;
         this.gameName = gameName;
+        this.draw=draw;
+        this.resign = resign;
+    }
+
+    public boolean isDraw() {
+        return draw;
+    }
+
+    public boolean isResign() {
+        return resign;
     }
 
     public ArrayList<Move> getGameMoves() {

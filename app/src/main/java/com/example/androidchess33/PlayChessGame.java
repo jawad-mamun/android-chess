@@ -53,6 +53,8 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
     private boolean whiteTurn = true;
     private boolean printBoard = true;
     private boolean enPassantPossible = false;
+    boolean resign=false;
+    boolean draw=false;
     Board board = new Board();
 
     @Override
@@ -191,6 +193,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                 } else{
                     Toast.makeText(PlayChessGame.this, "Black resigns, white wins!", Toast.LENGTH_LONG).show();
                 }
+                resign = true;
                 offerSaveGameDialog(PlayChessGame.this);
             }
         });
@@ -200,6 +203,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
             @Override
             public void onClick(View v){
                 Toast.makeText(PlayChessGame.this, "The game ends in a draw.", Toast.LENGTH_LONG).show();
+                draw=true;
                 offerSaveGameDialog(PlayChessGame.this);
             }
         });
@@ -1287,11 +1291,14 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
 //                                    Toast.LENGTH_LONG).show();
 //                            return;
 //                        }
-                            savedGameArrayList.add(new SavedGame(gameMoves, gameDate, gameName));
-                            Log.d("savedGames: ", SavedGames.userSavedGames.toString());
-                            writeToFile(savedGameArrayList, getApplicationContext());
+                            savedGameArrayList.add(new SavedGame(gameMoves, gameDate, gameName, draw,resign));
 
-                            SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName));
+                            Log.e("savedGames: ", SavedGames.userSavedGames.toString());
+                            writeToFile(savedGameArrayList, getApplicationContext());
+                            SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName,draw,resign));
+
+
+                            Log.e("ga: ", SavedGames.userSavedGames.toString());
                             startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
                         }
                     })
