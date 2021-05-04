@@ -64,11 +64,21 @@ public class SavedGames extends AppCompatActivity implements Serializable {
             sortName.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    selectionSort(nameList, arrayList, savedGamesList);
+                    selectionSort(nameList, arrayList, savedGamesList, dateList);
                     Log.d("First in list", ""+arrayList.get(0));
                     listView.setAdapter(adapter);
                     adapter.notifyDataSetChanged();
                     listView.refreshDrawableState();
+                }
+            });
+            sortDate.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectionSortDate(nameList,arrayList,savedGamesList,dateList);
+                    listView.setAdapter(adapter);
+                    adapter.notifyDataSetChanged();
+                    listView.refreshDrawableState();
+                    //Log.d()
                 }
             });
             listView.setAdapter(adapter);
@@ -115,7 +125,7 @@ public class SavedGames extends AppCompatActivity implements Serializable {
             Toast.makeText(SavedGames.this, "Read your text", Toast.LENGTH_LONG).show();*/
 
     }
-    public static void selectionSort(ArrayList<String> nameList, ArrayList<String> adapterList, ArrayList<SavedGame> savedGamesList )
+    public static void selectionSort(ArrayList<String> nameList, ArrayList<String> adapterList, ArrayList<SavedGame> savedGamesList, ArrayList<Date> dateList )
     {
 
         // Find the string reference that should go in each cell of
@@ -132,6 +142,29 @@ public class SavedGames extends AppCompatActivity implements Serializable {
             Collections.swap(nameList, j, min);
             Collections.swap(savedGamesList, j, min);
             Collections.swap(adapterList, j, min);
+            Collections.swap(dateList, j, min);
+
+        }
+
+    }
+    public static void selectionSortDate(ArrayList<String> nameList, ArrayList<String> adapterList, ArrayList<SavedGame> savedGamesList, ArrayList<Date> dateList )
+    {
+
+        // Find the string reference that should go in each cell of
+        // the array, from cell 0 to the end
+        for ( int j=0; j < dateList.size()-1; j++ )
+        {
+            // Find min: the index of the string reference that should go into cell j.
+            // Look through the unsorted strings (those at j or higher) for the one that is first in lexicographic order
+            int min = j;
+            for ( int k=j+1; k < dateList.size(); k++ )
+                if ( dateList.get(k).compareTo( dateList.get(min)) < 0 ) min = k;
+
+            // Swap the reference at j with the reference at min
+            Collections.swap(nameList, j, min);
+            Collections.swap(savedGamesList, j, min);
+            Collections.swap(adapterList, j, min);
+            Collections.swap(dateList, j, min);
 
         }
 
