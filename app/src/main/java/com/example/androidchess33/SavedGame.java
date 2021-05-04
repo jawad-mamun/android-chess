@@ -1,9 +1,10 @@
 package com.example.androidchess33;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class SavedGame {
+public class SavedGame implements Serializable {
     ArrayList<Move> gameMoves;
     Date datePlayed;
     String gameName;

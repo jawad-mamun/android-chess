@@ -19,12 +19,23 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 
-public class PlayChessGame extends AppCompatActivity {
+public class PlayChessGame extends AppCompatActivity implements Serializable {
     // maps the ID of a square on the chessboard to its position in the matrix
     public HashMap<Integer, int[]> findSquares = new HashMap<Integer, int[]>();
     // holds details of User's first click: first element is row num, second element is col num,
@@ -1069,17 +1080,22 @@ public class PlayChessGame extends AppCompatActivity {
     }
 
     private void offerSaveGameDialog(Context c) {
-        final EditText taskEditText = new EditText(c);
-        AlertDialog dialog = new AlertDialog.Builder(c)
-                .setTitle("Save this Game")
-                .setMessage("Would you like to save this game? If so, enter a name:")
-                .setView(taskEditText)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String gameName = String.valueOf(taskEditText.getText());
-                        Date gameDate = Calendar.getInstance().getTime();
-                        // implement this code later if you want to make sure game names are unique
+        try {
+            ArrayList<SavedGame> savedGameArrayList = readFile(getApplicationContext());
+
+            Log.d("Array Size", "" + savedGameArrayList.size());
+            final EditText taskEditText = new EditText(c);
+            AlertDialog dialog = new AlertDialog.Builder(c)
+                    .setTitle("Save this Game")
+                    .setMessage("Would you like to save this game? If so, enter a name:")
+                    .setView(taskEditText)
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            String gameName = String.valueOf(taskEditText.getText());
+                            Date gameDate = Calendar.getInstance().getTime();
+
+                            // implement this code later if you want to make sure game names are unique
 //                        if(gameName.equals("taken")){
 //                            Toast.makeText(PlayChessGame.this,
 //                                    "Your game could not be saved because you chose an already existing name." +
@@ -1087,26 +1103,39 @@ public class PlayChessGame extends AppCompatActivity {
 //                                    Toast.LENGTH_LONG).show();
 //                            return;
 //                        }
-                        SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName));
-                        startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
-                    }
-                })
-                .setNegativeButton("No", new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int which){
-                        startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
-                    }
-                })
-                .create();
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.copyFrom(dialog.getWindow().getAttributes());
-        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-        dialog.show();
-        dialog.getWindow().setAttributes(lp);
+                            savedGameArrayList.add(new SavedGame(gameMoves, gameDate, gameName));
+                            Log.d("savedGames: ", SavedGames.userSavedGames.toString());
+                            writeToFile(savedGameArrayList, getApplicationContext());
+
+                            SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName));
+                            startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
+                        }
+                    })
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
+
+
+                        }
+                    })
+                    .create();
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+            lp.copyFrom(dialog.getWindow().getAttributes());
+            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+            lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+            dialog.show();
+
+            dialog.getWindow().setAttributes(lp);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void promotionDialog(Context c, int startRow, int startCol, int endRow, int endCol, boolean whiteTurn,
+        private void promotionDialog(Context c, int startRow, int startCol, int endRow, int endCol, boolean whiteTurn,
                                  ArrayList<Piece> capturedPiece, int id, boolean firstMove){
         AlertDialog.Builder buildPromotionList = new AlertDialog.Builder(c);
         buildPromotionList.setTitle("Promote pawn to one of the following pieces:");
@@ -1158,6 +1187,69 @@ public class PlayChessGame extends AppCompatActivity {
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
         d.show();
         d.getWindow().setAttributes(lp);
+        //Log.d("savedGames: ", SavedGames.userSavedGames.toString());
+
+
     }
+    private void writeToFile(ArrayList<SavedGame> userSavedGames, Context context){
+
+            File file = new File(PlayChessGame.this.getFilesDir(),"text");
+            if(!file.exists()){
+                file.mkdir();
+                Log.d("Message", "File does not exist");
+            }
+            try {
+            File gpxfile = new File(file,"sample");
+            FileOutputStream fos = new FileOutputStream(gpxfile);
+            ObjectOutputStream o = new ObjectOutputStream(fos);
+            o.writeObject(userSavedGames);
+            /*
+            FileWriter writer = new FileWriter(gpxfile);
+            writer.append(userSavedGames.get(0).getGameName());
+            writer.flush();
+            writer.close();*/
+
+            Toast.makeText(PlayChessGame.this, "Saved your text", Toast.LENGTH_LONG).show();
+        } catch (Exception e) { }
+            /*
+            File mfile = context.getExternalFilesDir(null);
+            ObjectOutput out;
+            try {
+                File outFile = new File(mfile,
+                        "someRandom.txt");
+                out = new ObjectOutputStream(new FileOutputStream(outFile));
+                out.writeObject(userSavedGames);
+                out.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            /*
+            FileOutputStream fos = context.openFileOutput("config.txt", Context.MODE_PRIVATE);
+            ObjectOutputStream os = new ObjectOutputStream(fos);
+            os.writeObject(userSavedGames);
+            os.close();
+            fos.close();*/
+
+    }
+    private ArrayList<SavedGame> readFile(Context context) throws IOException, ClassNotFoundException {
+        File file = new File(PlayChessGame.this.getFilesDir()+"/text/sample");
+        FileInputStream fi = new FileInputStream(file);
+        ObjectInputStream oi = new ObjectInputStream(fi);
+
+        ArrayList<SavedGame> listGames = (ArrayList<SavedGame>) oi.readObject();
+        return listGames;
+       /* for(int i=0; i<listGames.size(); i++) {
+            Log.d("Read in Games", listGames.get(i).toString());
+        }
+        Log.d("Array size", ""+listGames.size());*/
+
+
+
+        //Toast.makeText(PlayChessGame.this, "Read your text", Toast.LENGTH_LONG).show();
+
+
+    }
+
+
 
 }

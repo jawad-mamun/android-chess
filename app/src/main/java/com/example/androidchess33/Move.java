@@ -1,6 +1,8 @@
 package com.example.androidchess33;
 
-public class Move {
+import java.io.Serializable;
+
+public class Move implements Serializable {
     int firstClickRow;
     int firstClickColumn;
     int firstClickID;
