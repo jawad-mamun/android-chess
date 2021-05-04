@@ -1,6 +1,8 @@
 package com.example.androidchess33;
 
-public abstract class Piece {
+import java.io.Serializable;
+
+public abstract class Piece implements Serializable {
     /** Represents the color of the piece (white or not white, i.e. black).
      */
     public boolean isWhite;

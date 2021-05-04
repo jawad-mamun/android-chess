@@ -1158,7 +1158,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                                     //add this move to the list of moves
                                     gameMoves.add(new Move(i, j, startID, a, b, endID,
                                             !whiteTurn, enPassantPossible, false, castlingMove,
-                                            pieceCaptured, true, firstMoveChanged));
+                                            pieceCaptured, true, firstMoveChanged, board.board[a][b]));
 
                                     updateUserView(a, b, endID);
 
@@ -1178,7 +1178,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                                 // records whether a piece's first move was changed
                                 boolean firstMoveChanged = firstMove != board.board[a][b].firstMove;
 
-                                //add this move to the list of moves (this currently assumes no pawn promotion)
+                                //add this move to the list of moves
                                 gameMoves.add(new Move(i, j, startID, a, b, endID,
                                         !whiteTurn, enPassantPossible, false, castlingMove,
                                         pieceCaptured, false, firstMoveChanged));
@@ -1293,12 +1293,12 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
 //                        }
                             savedGameArrayList.add(new SavedGame(gameMoves, gameDate, gameName, draw,resign));
 
-                            Log.e("savedGames: ", SavedGames.userSavedGames.toString());
+                            Log.e("savedGames: ", savedGameArrayList.toString());
                             writeToFile(savedGameArrayList, getApplicationContext());
                             SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName,draw,resign));
 
 
-                            Log.e("ga: ", SavedGames.userSavedGames.toString());
+                            Log.e("ga: ", savedGameArrayList.toString());
                             startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
                         }
                     })
@@ -1364,7 +1364,7 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
                 //add this move to the list of moves (this currently assumes no pawn promotion)
                 gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
                         whiteTurn, enPassantPossible, false, castlingMove,
-                        pieceCaptured, true, firstMoveChanged));
+                        pieceCaptured, true, firstMoveChanged, board.board[endRow][endCol]));
 
                 updateUserView(endRow, endCol, id);
 
@@ -1392,6 +1392,8 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
             File gpxfile = new File(file,"storedData");
             FileOutputStream fos = new FileOutputStream(gpxfile);
             ObjectOutputStream o = new ObjectOutputStream(fos);
+            Log.e("userSavedGames: ", userSavedGames.toString());
+            // this line below causes the error
             o.writeObject(userSavedGames);
             /*
             FileWriter writer = new FileWriter(gpxfile);
@@ -1400,7 +1402,9 @@ public class PlayChessGame extends AppCompatActivity implements Serializable {
             writer.close();*/
 
             Toast.makeText(PlayChessGame.this, "Saved your text", Toast.LENGTH_LONG).show();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+                Log.e("Write to file", e.toString());
+            }
             /*
             File mfile = context.getExternalFilesDir(null);
             ObjectOutput out;

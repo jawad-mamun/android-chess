@@ -16,7 +16,7 @@ public class Move implements Serializable {
     boolean castlingMove;
     boolean pawnPromotion;
     boolean firstMoveChanged;
-
+    Piece promotedTo;
     Piece capturedPiece;
 
     public Move(int firstClickRow, int firstClickColumn, int firstClickID, int secondClickRow,
@@ -36,6 +36,31 @@ public class Move implements Serializable {
         this.capturedPiece = capturedPiece;
         this.pawnPromotion = pawnPromotion;
         this.firstMoveChanged = firstMoveChanged;
+    }
+
+    //promotion constructor
+    public Move(int firstClickRow, int firstClickColumn, int firstClickID, int secondClickRow,
+                int secondClickColumn, int secondClickID, boolean whiteTurn, boolean enPassantPossible,
+                boolean enPassantMove, boolean castlingMove, Piece capturedPiece, boolean pawnPromotion,
+                boolean firstMoveChanged, Piece promotedTo) {
+        this.firstClickRow = firstClickRow;
+        this.firstClickColumn = firstClickColumn;
+        this.firstClickID = firstClickID;
+        this.secondClickRow = secondClickRow;
+        this.secondClickColumn = secondClickColumn;
+        this.secondClickID = secondClickID;
+        this.whiteTurn = whiteTurn;
+        this.enPassantPossible = enPassantPossible;
+        this.enPassantMove = enPassantMove;
+        this.castlingMove = castlingMove;
+        this.capturedPiece = capturedPiece;
+        this.pawnPromotion = pawnPromotion;
+        this.firstMoveChanged = firstMoveChanged;
+        this.promotedTo = promotedTo;
+    }
+
+    public Piece getPromotedTo() {
+        return promotedTo;
     }
 
     public boolean isFirstMoveChanged() {

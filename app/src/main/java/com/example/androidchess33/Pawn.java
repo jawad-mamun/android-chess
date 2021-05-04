@@ -1,6 +1,6 @@
 package com.example.androidchess33;
 
-public class Pawn extends Piece{
+public class Pawn extends Piece {
 
     /**
      * Creates a new Pawn with the specified color.

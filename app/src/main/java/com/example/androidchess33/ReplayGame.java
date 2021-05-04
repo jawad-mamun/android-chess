@@ -223,11 +223,19 @@ public class ReplayGame extends AppCompatActivity implements Serializable {
                     enPassantPossible = false;
                 }
 
-                // opens dialog for user to handle promotion when applicable (and handles the rest of promotion there)
-               /* if(board.board[endRow][endCol] instanceof Pawn && (endRow==0 || endRow==7)){
-                   promotionDialog(PlayChessGame.this, startRow, startCol, endRow, endCol, !whiteTurn, capturedPiece, id, firstMove);
-                    return;
-                }*/
+                // simulates promotion
+               if(board.board[endRow][endCol] instanceof Pawn && (endRow==0 || endRow==7)){
+
+
+                       board.board[endRow][endCol] = move.getPromotedTo();
+
+                       Piece pieceCaptured = null;
+                       if(capturedPiece.size()>0) pieceCaptured = capturedPiece.get(0);
+
+                       updateUserView(startRow, startCol, firstClickID, endRow, endCol, id);
+
+                       return;
+                }
 
 
 
@@ -247,7 +255,7 @@ public class ReplayGame extends AppCompatActivity implements Serializable {
                         !whiteTurn, enPassantPossible, false, castlingMove,
                         pieceCaptured, false, firstMoveChanged));*/
 
-                updateUserView(endRow, endCol, id, firstClickID);
+                updateUserView(startRow, startCol, firstClickID, endRow, endCol, id);
             }
 
             else if(enPassantPossible && board.enPassantValid(startRow, startCol, endRow, endCol, whiteTurn)) {
@@ -258,7 +266,7 @@ public class ReplayGame extends AppCompatActivity implements Serializable {
                 }
                 enPassantPossible=false;
 
-                updateUserView(endRow, endCol, id, firstClickID);
+                updateUserView(startRow, startCol, firstClickID, endRow, endCol, id);
 
                 // add this move to the list of moves
                 gameMoves.add(new Move(startRow, startCol, firstClick.get(2), endRow, endCol, id,
@@ -329,14 +337,14 @@ public class ReplayGame extends AppCompatActivity implements Serializable {
 
     }
 
-    public void updateUserView(int endRow, int endCol, int id, int firstClickId){
+    public void updateUserView(int startRow, int startCol, int firstClickId, int endRow, int endCol, int id){
 
         ImageButton firstPiece = (ImageButton)findViewById(firstClickId);
         firstPiece.setImageResource(0);
 
 
         // handle castling first
-        if(board.board[endRow][endCol] instanceof King && Math.abs(firstClick.get(1)-endCol)==2){
+        if(board.board[endRow][endCol] instanceof King && Math.abs(startCol-endCol)==2){
             ImageButton secondPiece = (ImageButton)findViewById(id);
             // castling black E8 --> C8
             if(endCol==2 && endRow==0){

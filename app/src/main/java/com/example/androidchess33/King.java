@@ -1,6 +1,7 @@
 package com.example.androidchess33;
 
-public class King extends Piece{
+
+public class King extends Piece {
 
     /**
      * Creates a new King with the specified color.
