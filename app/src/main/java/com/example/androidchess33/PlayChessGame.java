@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.text.TextWatcher;
@@ -144,6 +145,28 @@ public class PlayChessGame extends AppCompatActivity {
             @Override
             public void onClick(View v){
                 undoMove();
+            }
+        });
+
+        Button resignButton = (Button) findViewById(R.id.resignButton);
+        resignButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                if(whiteTurn){
+                    Toast.makeText(PlayChessGame.this, "White resigns, black wins!", Toast.LENGTH_LONG).show();
+                } else{
+                    Toast.makeText(PlayChessGame.this, "Black resigns, white wins!", Toast.LENGTH_LONG).show();
+                }
+                offerSaveGameDialog(PlayChessGame.this);
+            }
+        });
+
+        Button drawButton = (Button) findViewById(R.id.drawButton);
+        drawButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                Toast.makeText(PlayChessGame.this, "The game ends in a draw.", Toast.LENGTH_LONG).show();
+                offerSaveGameDialog(PlayChessGame.this);
             }
         });
 
@@ -849,7 +872,6 @@ public class PlayChessGame extends AppCompatActivity {
                 //System.out.println("Black wins");
                 Toast.makeText(PlayChessGame.this,"CheckMate, Black Wins", Toast.LENGTH_LONG).show();
             }
-            //Add functionality
             offerSaveGameDialog(PlayChessGame.this);
         }
     }
@@ -1066,11 +1088,22 @@ public class PlayChessGame extends AppCompatActivity {
 //                            return;
 //                        }
                         SavedGames.userSavedGames.add(new SavedGame(gameMoves, gameDate, gameName));
+                        startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
                     }
                 })
-                .setNegativeButton("No", null)
+                .setNegativeButton("No", new DialogInterface.OnClickListener(){
+                    @Override
+                    public void onClick(DialogInterface dialog, int which){
+                        startActivity(new Intent(getApplicationContext(), OriginalMenu.class));
+                    }
+                })
                 .create();
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
         dialog.show();
+        dialog.getWindow().setAttributes(lp);
     }
 
     private void promotionDialog(Context c, int startRow, int startCol, int endRow, int endCol, boolean whiteTurn,
